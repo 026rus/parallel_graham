@@ -1,0 +1,5 @@
+High Level Steps
+	1. Scatter data points for 8 local hulls
+	2. Local Akl-Toussaint using 8 processors per local hull (utilize all 64 processors) 
+	3. Local Graham Scan using up to 8 processors per local hull (try to utilize all 64 processors)
+	4. Parallel Merge until only one hull left 
