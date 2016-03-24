@@ -1,103 +1,123 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <mpi.h>
 
 /******************************************************************************/
-struct point
+typedef struct
 {
 	float x;
 	float y;
-};
+} point;
 /******************************************************************************/
-bool isInside(struct point a,struct point b,struct point c,struct point d);
-bool ccw(struct point a, struct point b, struct point c);
+bool isInside(point a, point b, point c, point d);
 /******************************************************************************/
 int main(int argc, char** argv)
 { 
-	const int tag = 74775;
-	int rankn;
-	int np;
-	int startv;
-	MPI_Comm comm;
-//	/*  createing a type for struct  */
-//	const int tm = 2;
-//	int block[2] = {1,1};
-//	MPI_Datatype types[2]= {MPI_FLOAT, MPI_FLOAT};
-//	MPI_Datatype mpi_point;
-//	MPI_Aint  	 offset[2];
-//
-//	offset[0] = offsetof(point, x);
-//	offset[1] = offsetof(point, y);
-//
-//	MPI_Type_create_struct(tm, block, offset, tyes, &mpi_point);
-//	MPI_Type_commit(&mpi_point);
-//	/*  ---------------------------  */
+    unsigned rank = 0, count = 0, i = 0;
+    
+    //Basic stuff
+    MPI_Init(&argc, &argv);    
+	MPI_Comm comm = MPI_COMM_WORLD;
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &count);
+
+	/*  ---------------------------  */
+    //Define point structure for use with MPI communicators
+    MPI_Datatype point_type; //Name of derived typed
+    MPI_Type_contiguous(2, MPI_FLOAT, &point_type); //Define derived type
+    MPI_Type_commit(&point_type); //Derived type must be committed to be used
+	/*  ---------------------------  */
 	
-	MPI_Init(&argc, &argv);
-	comm = MPI_COMM_WORLD;
-	MPI_Comm_size(comm, &np);
-	MPI_Comm_rank(comm, &rankn);
-	struct point a;
-	struct point b;
-	struct point c;
-	struct point d;
-	struct point f;
+	point a;
+	point b;
+	point c;
+	point d;
+	point f;
 	/* --------------  */
-	a.x = 1.0;
-	a.y = 7.0;
+	if(rank == 0)
+	{
+		a.x = 1.0;
+		a.y = 7.0;
 
-	b.x = 9.0;
-	b.y = 3.0;
+		b.x = 9.0;
+		b.y = 3.0;
 
-	c.x = 7.0;
-	c.y = 6.0;
+		c.x = 7.0;
+		c.y = 6.0;
 
-	d.x = 3.0;
-	d.y = 4.0;
+		d.x = 3.0;
+		d.y = 4.0;
 
-	f.x = 0.0;
-	f.y = 0.0;
+		f.x = 0.0;
+		f.y = 0.0;
+	}
+	else
+	{
+		a.x = 0.0;
+		a.y = 0.0;
+
+		b.x = 0.0;
+		b.y = 0.0;
+
+		c.x = 0.0;
+		c.y = 0.0;
+
+		d.x = 0.0;
+		d.y = 0.0;
+
+		f.x = 0.0;
+		f.y = 0.0;
+
+	}
 	/* --------------  */
 	double start = MPI_Wtime();
-	if (rankn == 0)
+
+    MPI_Bcast(&a, 1, point_type, 0, comm);
+    MPI_Bcast(&b, 1, point_type, 0, comm);
+    MPI_Bcast(&c, 1, point_type, 0, comm);
+    MPI_Bcast(&d, 1, point_type, 0, comm);
+    MPI_Bcast(&f, 1, point_type, 0, comm);
+
+	if (rank == 1)
 	{
-		if (isInsede(a, b, c, f))
+		if (isInside(a, b, c, f))
 			printf("YES\n");
 		else
 			printf("NO!!!\n");
-		if (isInsede(a, b, f, c))
+		if (isInside(a, b, f, c))
 			printf("YES\n");
 		else
 			printf("NO!!!\n");
-		if (isInsede(b, a, c, f))
+		if (isInside(b, a, c, f))
 			printf("YES\n");
 		else
 			printf("NO!!!\n");
-		if (isInsede(b, a, f, c))
+		if (isInside(b, a, f, c))
 			printf("YES\n");
 		else
 			printf("NO!!!\n");
 	
-		if (isInsede(a, b, d, f))
+		if (isInside(a, b, d, f))
 			printf("YES\n");
 		else
 			printf("NO!!!\n");
-		if (isInsede(a, b, f, d))
+		if (isInside(a, b, f, d))
 			printf("YES\n");
 		else
 			printf("NO!!!\n");
-		if (isInsede(b, a, d, f))
+		if (isInside(b, a, d, f))
 			printf("YES\n");
 		else
 			printf("NO!!!\n");
-		if (isInsede(b, a, f, d))
+		if (isInside(b, a, f, d))
 			printf("YES\n");
 		else
 			printf("NO!!!\n");
 	
 	}
  	double finish = MPI_Wtime();
- 	if (!rankn)
+ 	if (!rank)
  		printf ("Run time: %g" , finish-start); 
 
 
@@ -107,7 +127,7 @@ int main(int argc, char** argv)
 	return 0;
 }
 /******************************************************************************/
-bool isInside(struct point a, struct point b, struct point c, struct point origen)
+bool isInside(point a, point b, point c, point origen)
 {
 	bool acd = ((origen.y - a.y)*(c.x - a.x)) > ((c.y - a.y)*(origen.x - a.x));
 	bool bcd = ((origen.y - b.y)*(c.x - b.x)) > ((c.y - b.y)*(origen.x - b.x));
