@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <mpi.h>
+#include <mpi/mpi.h>
 
 /******************************************************************************/
 typedef struct
@@ -85,35 +85,42 @@ int main(int argc, char** argv)
 			printf("YES\n");
 		else
 			printf("NO!!!\n");
+    	fflush(stdout);
 		if (isInside(a, b, f, c))
 			printf("YES\n");
 		else
 			printf("NO!!!\n");
+    	fflush(stdout);
 		if (isInside(b, a, c, f))
 			printf("YES\n");
 		else
 			printf("NO!!!\n");
+    	fflush(stdout);
 		if (isInside(b, a, f, c))
 			printf("YES\n");
 		else
 			printf("NO!!!\n");
-	
+    	fflush(stdout);
 		if (isInside(a, b, d, f))
 			printf("YES\n");
 		else
 			printf("NO!!!\n");
+    	fflush(stdout);
 		if (isInside(a, b, f, d))
 			printf("YES\n");
 		else
 			printf("NO!!!\n");
+    	fflush(stdout);
 		if (isInside(b, a, d, f))
 			printf("YES\n");
 		else
 			printf("NO!!!\n");
+    	fflush(stdout);
 		if (isInside(b, a, f, d))
 			printf("YES\n");
 		else
 			printf("NO!!!\n");
+    	fflush(stdout);
 	
 	}
  	double finish = MPI_Wtime();
