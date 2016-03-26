@@ -11,7 +11,7 @@ typedef struct
 } point;
 /******************************************************************************/
 bool isInside(point a, point b, point c, point d);
-void collectPoints(point * &, unsigned rank)
+void collectPoints(point *a, int *, unsigned rank);
 /******************************************************************************/
 int main(int argc, char** argv)
 { 
@@ -30,53 +30,58 @@ int main(int argc, char** argv)
     MPI_Type_commit(&point_type); //Derived type must be committed to be used
 	/*  ---------------------------  */
 	
-	point p[5];
+	point *p;
+	int numpoints;
 	/* --------------  */
 	if(rank == 0)
 	{
-		p[0].x = 1.0;
-		p[0].y = 7.0;
-		p[1].x = 9.0;
-		p[1].y = 3.0;
-		p[2].x = 7.0;
-		p[2].y = 6.0;
-		p[3].x = 3.0;
-		p[3].y = 4.0;
-		p[4].x = 0.0;
-		p[4].y = 0.0;
+		collectPoints(p, &numpoints,  rank);
 	}
-	else
-	{
-		p[0].x = 0.0;
-		p[0].y = 0.0;
-		p[1].x = 0.0;
-		p[1].y = 0.0;
-		p[2].x = 0.0;
-		p[2].y = 0.0;
-		p[3].x = 0.0;
-		p[3].y = 0.0;
-		p[4].x = 0.0;
-		p[4].y = 0.0;
 
-	}
-	/* --------------  */
+
 	double start = MPI_Wtime();
-
     MPI_Bcast(&p, 5, point_type, 0, comm);
 
+
+
  	double finish = MPI_Wtime();
+	/* --------------  */
+
  	if (!rank)
  		printf ("Run time: %g" , finish-start); 
 
-
 	/////////////////////////////////	
-	// MPI_Type_free(&mpi_point);
+	MPI_Type_free(&point_type);
 	MPI_Finalize();
 	return 0;
 }
 /******************************************************************************/
-void collectPoints(point * &, unsigned rank)
+void collectPoints(point *a, int *size,  unsigned rank)
 {
+	FILE *infile;
+
+	infile = fopen("test_cases/64_int_redius_100.txt", "r");
+	if(infile == NULL)
+		printf ( "Cannot read file !!!");
+	int numpoints;
+	float x,
+		  y;
+	if (fscanf(infile, "%d", &numpoints) != 1)
+		printf ( "Cannot read file !!!");
+
+	a = malloc(numpoints * sizeof(point) );
+	
+	int i =0;
+	for (i = 0; i < numpoints; ++i)
+	{
+		if (fscanf (infile, "%f %f", &x, &y) == 2)
+		{
+			a[i].x = x;
+			a[i].y = y;
+		}
+	}
+	fclose(infile);
+	*size = numpoints;
 	
 }
 /******************************************************************************/
