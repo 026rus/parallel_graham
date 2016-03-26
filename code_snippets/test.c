@@ -11,7 +11,7 @@ typedef struct
 } point;
 /******************************************************************************/
 bool isInside(point a, point b, point c, point d);
-void collectPoints(point *a, int *, unsigned rank);
+void collectPoints(point **a, int *, unsigned rank);
 /******************************************************************************/
 int main(int argc, char** argv)
 { 
@@ -35,12 +35,17 @@ int main(int argc, char** argv)
 	/* --------------  */
 	if(rank == 0)
 	{
-		collectPoints(p, &numpoints,  rank);
+		collectPoints(&p, &numpoints,  rank);
+		int i=0;
+		for (i = 0; i < numpoints; ++i)
+		{
+			printf(" %f -=- %f \n", p[i].x, p[i].y);
+		}
 	}
 
 
 	double start = MPI_Wtime();
-    MPI_Bcast(&p, 5, point_type, 0, comm);
+    // MPI_Bcast(&p, 5, point_type, 0, comm);
 
 
 
@@ -56,11 +61,12 @@ int main(int argc, char** argv)
 	return 0;
 }
 /******************************************************************************/
-void collectPoints(point *a, int *size,  unsigned rank)
+void collectPoints(point **a, int *size,  unsigned rank)
 {
 	FILE *infile;
 
-	infile = fopen("test_cases/64_int_redius_100.txt", "r");
+	// infile = fopen("../test_cases/64_int_radius_100.txt", "r");
+	infile = fopen("../test_cases/10_int_radius_10.txt", "r");
 	if(infile == NULL)
 		printf ( "Cannot read file !!!");
 	int numpoints;
@@ -69,20 +75,20 @@ void collectPoints(point *a, int *size,  unsigned rank)
 	if (fscanf(infile, "%d", &numpoints) != 1)
 		printf ( "Cannot read file !!!");
 
-	a = malloc(numpoints * sizeof(point) );
+	point *arr = malloc(numpoints * sizeof(point) );
 	
 	int i =0;
 	for (i = 0; i < numpoints; ++i)
 	{
 		if (fscanf (infile, "%f %f", &x, &y) == 2)
 		{
-			a[i].x = x;
-			a[i].y = y;
+			arr[i].x = x;
+			arr[i].y = y;
 		}
 	}
 	fclose(infile);
 	*size = numpoints;
-	
+	*a = arr;
 }
 /******************************************************************************/
 bool isInside(point a, point b, point c, point origen)
