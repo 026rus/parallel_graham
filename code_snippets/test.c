@@ -88,11 +88,23 @@ int main(int argc, char** argv)
 	return 0;
 }
 /******************************************************************************/
-point getOrigen(point x1, point y1, point x2, point y2)
+point getOrigen(point p1, point p2, point p3, point p4)
 {
 	point a;
-	a.x = 0;
-	a.y = 0; 
+	float A = (p1.x*p2.y-p2.x*p1.y)+
+		(p2.x*p3.y-p3.x*p2.y)+
+		(p3.x*p4.y-p4.x*p3.y)+
+		(p4.x*p1.y-p2.x*p4.y);
+	float s1 =  ( (p1.x+p2.x) * (p1.x*p2.y - p2.x*p1.y) ) + 
+				( (p2.x+p3.x) * (p2.x*p3.y - p2.x*p3.y) ) + 
+				( (p3.x+p4.x) * (p3.x*p4.y - p3.x*p4.y) );
+
+	float s2 =  ( (p1.y+p2.y) * (p1.y*p2.x - p2.y*p1.x) ) + 
+				( (p2.y+p3.y) * (p2.y*p3.x - p2.y*p3.x) ) + 
+				( (p3.y+p4.y) * (p3.y*p4.x - p3.y*p4.x) );
+
+	a.x = (s1)/ (6*A);
+	a.y = (s2)/ (6*A);
 	return a;
 }
 void aki(point **a, int *size_a, point **ex, int *size_ex )
@@ -120,6 +132,7 @@ void aki(point **a, int *size_a, point **ex, int *size_ex )
 	*ex = malloc(*size_ex * sizeof(point));
 
 	point origen =  getOrigen(xmax, ymax, xmin, ymin);
+	printf ("Origen x = %f, \t Y= %f\n", origen.x, origen.y);
 
 	for (i=0; i<*size_a; i++)
 	{
