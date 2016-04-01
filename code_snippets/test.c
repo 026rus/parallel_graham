@@ -13,6 +13,7 @@ typedef struct
 bool isInside(point a, point b, point c, point d);
 void collectPoints(point **a, int *, unsigned rank);
 void aki(point **a, int *size_a, point **ex, int *size_ex );
+point getOrigen(point x1, point y1, point x2, point y2);
 /******************************************************************************/
 int main(int argc, char** argv)
 { 
@@ -80,54 +81,68 @@ int main(int argc, char** argv)
 	return 0;
 }
 /******************************************************************************/
+point getOrigen(point x1, point y1, point x2, point y2)
+{
+	point a;
+	a.x = 0;
+	a.y = 0; 
+	return a;
+}
 void aki(point **a, int *size_a, point **ex, int *size_ex )
 {
 	int i=0;
-	point *temp= *a;
-	point xmax = temp[0],
-		  ymax = temp[0],
-		  xmin = temp[0],
-		  ymin = temp[0];
-
-	point	origen;
-	origen.x =0;
-	origen.y =0;
-
-	for (i=0; i<*size_a; i++)
-	{
-		if (temp[i].x > xmax.x ) xmax = temp[i];
-		if (temp[i].x < xmin.x ) xmin = temp[i];
-
-		if (temp[i].y > ymax.y ) ymax = temp[i];
-		if (temp[i].y < ymin.y ) ymin = temp[i];
-	}
 	int new_size_a	=0;	
+	point *temp;
+	point xmax = (*a)[0],
+		  ymax = (*a)[0],
+		  xmin = (*a)[0],
+		  ymin = (*a)[0];
+
 	for (i=0; i<*size_a; i++)
 	{
-		if ( 	!( (temp[i].x == xmax.x) && (temp[i].y == xmax.y) )
-			&& 	!( (temp[i].x == ymax.x) && (temp[i].y == ymax.y) )
-			&& 	!( (temp[i].x == xmin.x) && (temp[i].y == xmin.y) )
-			&& 	!( (temp[i].x == ymin.x) && (temp[i].y == ymin.y) ) )
+		if ((*a)[i].x > xmax.x ) xmax = (*a)[i];
+		if ((*a)[i].x < xmin.x ) xmin = (*a)[i];
+
+		if ((*a)[i].y > ymax.y ) ymax = (*a)[i];
+		if ((*a)[i].y < ymin.y ) ymin = (*a)[i];
+	}
+
+	point origen =  getOrigen(xmax, ymax, xmin, ymin);
+
+	for (i=0; i<*size_a; i++)
+	{
+		if ( 	!( ((*a)[i].x == xmax.x) && ((*a)[i].y == xmax.y) )
+			&& 	!( ((*a)[i].x == ymax.x) && ((*a)[i].y == ymax.y) )
+			&& 	!( ((*a)[i].x == xmin.x) && ((*a)[i].y == xmin.y) )
+			&& 	!( ((*a)[i].x == ymin.x) && ((*a)[i].y == ymin.y) ) )
 		{
-			if ( (isInside(xmax, ymax, temp[i], origen))
-				&&	(isInside(xmin, ymax, temp[i], origen))
-				&&	(isInside(xmin, ymin, temp[i], origen))
-				&&	(isInside(xmax, ymin, temp[i], origen)) )
+			if ( (isInside(xmax, ymax, (*a)[i], origen))
+				&&	(isInside(xmin, ymax, (*a)[i], origen))
+				&&	(isInside(xmin, ymin, (*a)[i], origen))
+				&&	(isInside(xmax, ymin, (*a)[i], origen)) )
 			{
 				printf ("Inside %d  = %f ; %f \n", i+1 , (*a)[i].x, (*a)[i].y);
+				(*a)[i] = origen;
 			}
 			else
 				new_size_a++;
 		}
-			
 	}
 
-// 	printf ("X max  = %f ; %f \n", xmax.x, xmax.y);
-// 	printf ("X min  = %f ; %f \n", xmin.x, xmin.y);
-// 
-// 	printf ("Y max  = %f ; %f \n", ymax.x, ymax.y);
-// 	printf ("Y min  = %f ; %f \n", ymin.x, ymin.y);
-
+	 temp = malloc(new_size_a * sizeof(point) );
+	 int c=0;
+	 for (i=0; i<*size_a; i++)
+	 {
+	     if ( ((*a)[i].x != origen.x) && ((*a)[i].y != origen.y) )
+	     {
+	    	temp[c] = (*a)[i];
+	    	c++;
+	    	if (c == new_size_a) break;
+	     }
+	 }
+	 free (*a);
+	 *a= temp;
+	 *size_a=new_size_a;
 }
 /******************************************************************************/
 void collectPoints(point **a, int *size,  unsigned rank)
