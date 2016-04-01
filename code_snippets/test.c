@@ -66,6 +66,13 @@ int main(int argc, char** argv)
 
 		aki(&p, &numpoints, &mx, &size_mx);
 
+		printf ("Inside %d num max min : %d \n",  numpoints, size_mx);
+		for (i=0; i< numpoints; i++)
+		{
+			printf ("%f \t<=>\t %f\n",  p[i].x, p[i].y);
+
+		}
+
 	}
 
 
@@ -92,6 +99,7 @@ void aki(point **a, int *size_a, point **ex, int *size_ex )
 {
 	int i=0;
 	int new_size_a	=0;	
+	*size_ex = 4;
 	point *temp;
 	point xmax = (*a)[0],
 		  ymax = (*a)[0],
@@ -107,6 +115,10 @@ void aki(point **a, int *size_a, point **ex, int *size_ex )
 		if ((*a)[i].y < ymin.y ) ymin = (*a)[i];
 	}
 
+	if (*ex == NULL)
+		free (*ex);
+	*ex = malloc(*size_ex * sizeof(point));
+
 	point origen =  getOrigen(xmax, ymax, xmin, ymin);
 
 	for (i=0; i<*size_a; i++)
@@ -121,7 +133,6 @@ void aki(point **a, int *size_a, point **ex, int *size_ex )
 				&&	(isInside(xmin, ymin, (*a)[i], origen))
 				&&	(isInside(xmax, ymin, (*a)[i], origen)) )
 			{
-				printf ("Inside %d  = %f ; %f \n", i+1 , (*a)[i].x, (*a)[i].y);
 				(*a)[i] = origen;
 			}
 			else
@@ -133,12 +144,19 @@ void aki(point **a, int *size_a, point **ex, int *size_ex )
 	 int c=0;
 	 for (i=0; i<*size_a; i++)
 	 {
-	     if ( ((*a)[i].x != origen.x) && ((*a)[i].y != origen.y) )
+	     if (!( ((*a)[i].x == origen.x) && ((*a)[i].y == origen.y) ))
 	     {
-	    	temp[c] = (*a)[i];
-	    	c++;
-	    	if (c == new_size_a) break;
-	     }
+			if ( 	!( ((*a)[i].x == xmax.x) && ((*a)[i].y == xmax.y) )
+				&& 	!( ((*a)[i].x == ymax.x) && ((*a)[i].y == ymax.y) )
+				&& 	!( ((*a)[i].x == xmin.x) && ((*a)[i].y == xmin.y) )
+				&& 	!( ((*a)[i].x == ymin.x) && ((*a)[i].y == ymin.y) ) )
+			{
+		    	temp[c] = (*a)[i];
+	    		c++;
+	    		if (c == new_size_a) break;
+
+	     	}
+	 	}
 	 }
 	 free (*a);
 	 *a= temp;
