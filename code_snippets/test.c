@@ -95,6 +95,7 @@ void aki(point **a, int *size_a, point **ex, int *size_ex )
 	int new_size_a	=0;	
 	*size_ex = 8;
 	point *temp;
+	/* I think it will be beter to make array here, but for now it eill work */
 	point xmax 		= (*a)[0],
 		  ymax 		= (*a)[0],
 		  xmin 		= (*a)[0],
@@ -104,24 +105,25 @@ void aki(point **a, int *size_a, point **ex, int *size_ex )
 		  difmax 	= (*a)[0],
 		  difmin 	= (*a)[0];
 
+	/* finding 8 point for aki  */
 	for (i=0; i<*size_a; i++)
 	{
 		if ((*a)[i].x > xmax.x ) xmax = (*a)[i];
 		if ((*a)[i].x < xmin.x ) xmin = (*a)[i];
-
 		if ((*a)[i].y > ymax.y ) ymax = (*a)[i];
 		if ((*a)[i].y < ymin.y ) ymin = (*a)[i];
-
 		if ( ((*a)[i].x + (*a)[i].y) > (summax.x + summax.y) )  summax = (*a)[i];
 		if ( ((*a)[i].x + (*a)[i].y) < (summin.x + summin.y) )  summin = (*a)[i];
-
 		if ( ((*a)[i].x - (*a)[i].y) > (difmax.x - difmax.y) )  difmax = (*a)[i];
 		if ( ((*a)[i].x - (*a)[i].y) < (difmin.x - difmin.y) )  difmin = (*a)[i];
 	}
 
+	/* make sure there is nothing in the array */
 	if (*ex == NULL)
 		free (*ex);
+	/* Allocating space for array */
 	*ex = malloc(*size_ex * sizeof(point));
+	/* Assine points to the array, will be esier if points will be in array aswel */
 	(*ex)[0] = xmax;
 	(*ex)[1] = ymax;
 	(*ex)[2] = xmin;
@@ -130,21 +132,14 @@ void aki(point **a, int *size_a, point **ex, int *size_ex )
 	(*ex)[5] = summin;
 	(*ex)[6] = difmax;
 	(*ex)[7] = difmin;
-/* ********************************************  */
-	printf ("xmax : %f ; %f\n", xmax.x, xmax.y);
-	printf ("ymax : %f ; %f\n", ymax.x, ymax.y);
-	printf ("xmin : %f ; %f\n", xmin.x, xmin.y);
-	printf ("ymin : %f ; %f\n", ymin.x, ymin.y);
-	printf ("summax : %f ; %f\n", summax.x, summax.y);
-	printf ("summin : %f ; %f\n", summin.x, summin.y);
-	printf ("difmax : %f ; %f\n", difmax.x, difmax.y);
-	printf ("difmin : %f ; %f\n", difmin.x, difmin.y);
-/* ********************************************  */
+
+	/* geting center coordinates for the poygon */
 	point origen =  getOrigen(xmax, ymax, xmin, ymin);
-	printf ("Origen x = %f, \t Y= %f\n", origen.x, origen.y);
+	// printf ("Origen x = %f, \t Y= %f\n", origen.x, origen.y);
 
 	for (i=0; i<*size_a; i++)
 	{
+		/* Very messy way to make sure I do not checking points to itself */
 		if ( 	!( ((*a)[i].x == xmax.x) && ((*a)[i].y == xmax.y) )
 			&& 	!( ((*a)[i].x == ymax.x) && ((*a)[i].y == ymax.y) )
 			&& 	!( ((*a)[i].x == xmin.x) && ((*a)[i].y == xmin.y) )
@@ -155,6 +150,7 @@ void aki(point **a, int *size_a, point **ex, int *size_ex )
 			&& 	!( ((*a)[i].x == difmin.x) && ((*a)[i].y == difmin.y) ) 
 			)
 		{
+		/* Very messy way to find if point is inside */
 			if ( 	(isInside(xmin, 	difmin, (*a)[i], origen))
 				&&	(isInside(difmin, 	ymax, 	(*a)[i], origen))
 				&&	(isInside(ymax, 	summax, (*a)[i], origen)) 
@@ -165,34 +161,39 @@ void aki(point **a, int *size_a, point **ex, int *size_ex )
 				&&	(isInside(summin, 	xmin, 	(*a)[i], origen)) 
 				)
 			{
+				/*  assined point to origen becouse i didnt figure out way to set it = to NULL  */
 				(*a)[i] = origen;
 			}
 			else
+				/* Counting points that I ceep */
 				new_size_a++;
 		}
 	}
 
-	 temp = malloc(new_size_a * sizeof(point) );
-	 int c=0;
-	 for (i=0; i<*size_a; i++)
-	 {
-	     if (!( ((*a)[i].x == origen.x) && ((*a)[i].y == origen.y) ))
-	     {
-			if ( 	!( ((*a)[i].x == xmax.x) && ((*a)[i].y == xmax.y) )
-				&& 	!( ((*a)[i].x == ymax.x) && ((*a)[i].y == ymax.y) )
-				&& 	!( ((*a)[i].x == xmin.x) && ((*a)[i].y == xmin.y) )
-				&& 	!( ((*a)[i].x == ymin.x) && ((*a)[i].y == ymin.y) ) )
-			{
-		    	temp[c] = (*a)[i];
-	    		c++;
-	    		if (c == new_size_a) break;
+	
+	/* making room for my points  */
+	temp = malloc(new_size_a * sizeof(point) );
+	int c=0;
+	for (i=0; i<*size_a; i++)
+	{
+	    if (!( ((*a)[i].x == origen.x) && ((*a)[i].y == origen.y) ))
+	    {
+	   	if ( 	!( ((*a)[i].x == xmax.x) && ((*a)[i].y == xmax.y) )
+	   		&& 	!( ((*a)[i].x == ymax.x) && ((*a)[i].y == ymax.y) )
+	   		&& 	!( ((*a)[i].x == xmin.x) && ((*a)[i].y == xmin.y) )
+	   		&& 	!( ((*a)[i].x == ymin.x) && ((*a)[i].y == ymin.y) ) )
+	   	{
+	       	temp[c] = (*a)[i];
+	   		c++;
+	   		if (c == new_size_a) break;
 
-	     	}
-	 	}
-	 }
-	 free (*a);
-	 *a= temp;
-	 *size_a=new_size_a;
+	    	}
+		}
+	}
+	/* free spase used by olde points  */
+	free (*a);
+	*a= temp;
+	*size_a=new_size_a;
 }
 /******************************************************************************/
 point getOrigen(point p1, point p2, point p3, point p4)
