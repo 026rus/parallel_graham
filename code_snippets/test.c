@@ -12,7 +12,7 @@ typedef struct
 /******************************************************************************/
 bool isInside(point a, point b, point c, point d);
 void collectPoints(point **a, int *, unsigned rank);
-void aki(point **a, int *size_a, point **ex, int *size_ex );
+void aki(point **a, int *size_a, point **ex, int *size_ex,unsigned rank, unsigned count, MPI_Comm comm);
 point getOrigen(point x1, point y1, point x2, point y2);
 /******************************************************************************/
 int main(int argc, char** argv)
@@ -36,15 +36,7 @@ int main(int argc, char** argv)
 	int numpoints;
 	/* --------------  */
 	if(rank == 0)
-	{
 		collectPoints(&p, &numpoints,  rank);
-// 		int i=0;
-//		for (i = 0; i < numpoints; ++i)
-//		{
-//			printf(" %f -=- %f \n", p[i].x, p[i].y);
-//		}
-	}
-
 
 	double start = MPI_Wtime();
     MPI_Bcast(&numpoints, 1, MPI_INT, 0, comm);
@@ -57,12 +49,12 @@ int main(int argc, char** argv)
 
     MPI_Bcast(p, numpoints, point_type, 0, comm);
 
+	point *mx;
+	int size_mx = 0;
+	aki(&p, &numpoints, &mx, &size_mx, rank, count, comm);
+
 	if (rank == 2 )
 	{
-		point *mx;
-		int size_mx = 0;
-
-		aki(&p, &numpoints, &mx, &size_mx);
 
 		printf ("Inside %d num max min : %d \n",  numpoints, size_mx);
 		for (i=0; i< numpoints; i++)
@@ -76,7 +68,6 @@ int main(int argc, char** argv)
 
 	}
 
-
  	double finish = MPI_Wtime();
 	/* --------------  */
 
@@ -89,12 +80,18 @@ int main(int argc, char** argv)
 	return 0;
 }
 /******************************************************************************/
-void aki(point **a, int *size_a, point **ex, int *size_ex )
+void aki(point **a, int *size_a, point **ex, int *size_ex,unsigned rank, unsigned count, MPI_Comm comm)
 {
 	int i=0;
 	int new_size_a	=0;	
 	*size_ex = 8;
 	point *temp;
+	/*  ---------------------------  */
+    //Define point structure for use with MPI communicators
+    MPI_Datatype point_type; //Name of derived typed
+    MPI_Type_contiguous(2, MPI_FLOAT, &point_type); //Define derived type
+    MPI_Type_commit(&point_type); //Derived type must be committed to be used
+	/*  ---------------------------  */
 	/* I think it will be beter to make array here, but for now it eill work */
 	point xmax 		= (*a)[0],
 		  ymax 		= (*a)[0],
@@ -106,16 +103,19 @@ void aki(point **a, int *size_a, point **ex, int *size_ex )
 		  difmin 	= (*a)[0];
 
 	/* finding 8 point for aki  */
-	for (i=0; i<*size_a; i++)
+	if (rank == 0 )
 	{
-		if ((*a)[i].x > xmax.x ) xmax = (*a)[i];
-		if ((*a)[i].x < xmin.x ) xmin = (*a)[i];
-		if ((*a)[i].y > ymax.y ) ymax = (*a)[i];
-		if ((*a)[i].y < ymin.y ) ymin = (*a)[i];
-		if ( ((*a)[i].x + (*a)[i].y) > (summax.x + summax.y) )  summax = (*a)[i];
-		if ( ((*a)[i].x + (*a)[i].y) < (summin.x + summin.y) )  summin = (*a)[i];
-		if ( ((*a)[i].x - (*a)[i].y) > (difmax.x - difmax.y) )  difmax = (*a)[i];
-		if ( ((*a)[i].x - (*a)[i].y) < (difmin.x - difmin.y) )  difmin = (*a)[i];
+		for (i=0; i<*size_a; i++)
+		{
+			if ((*a)[i].x > xmax.x ) xmax = (*a)[i];
+			if ((*a)[i].x < xmin.x ) xmin = (*a)[i];
+			if ((*a)[i].y > ymax.y ) ymax = (*a)[i];
+			if ((*a)[i].y < ymin.y ) ymin = (*a)[i];
+			if ( ((*a)[i].x + (*a)[i].y) > (summax.x + summax.y) )  summax = (*a)[i];
+			if ( ((*a)[i].x + (*a)[i].y) < (summin.x + summin.y) )  summin = (*a)[i];
+			if ( ((*a)[i].x - (*a)[i].y) > (difmax.x - difmax.y) )  difmax = (*a)[i];
+			if ( ((*a)[i].x - (*a)[i].y) < (difmin.x - difmin.y) )  difmin = (*a)[i];
+		}
 	}
 
 	/* make sure there is nothing in the array */
@@ -124,14 +124,33 @@ void aki(point **a, int *size_a, point **ex, int *size_ex )
 	/* Allocating space for array */
 	*ex = malloc(*size_ex * sizeof(point));
 	/* Assine points to the array, will be esier if points will be in array aswel */
-	(*ex)[0] = xmax;
-	(*ex)[1] = ymax;
-	(*ex)[2] = xmin;
-	(*ex)[3] = ymin;
-	(*ex)[4] = summax;
-	(*ex)[5] = summin;
-	(*ex)[6] = difmax;
-	(*ex)[7] = difmin;
+	if (rank == 0)
+	{
+		(*ex)[0] = xmax;
+		(*ex)[1] = ymax;
+		(*ex)[2] = xmin;
+		(*ex)[3] = ymin;
+		(*ex)[4] = summax;
+		(*ex)[5] = summin;
+		(*ex)[6] = difmax;
+		(*ex)[7] = difmin;
+	}
+
+	/* Brotcast the aki points to all cpus */
+    MPI_Bcast((*ex), *size_ex, point_type, 0, comm);
+
+	if (*size_a%count == 0)
+		printf("We are coole !!!");
+	else 
+		printf("The number of proccessers not diviseble by number of points!");
+	if (rank == 1)
+	{
+		int i=0;
+		for (i=0; i< *size_ex; i++)
+		{
+			printf ("\t\t\t Here is max points %d: %f \t<=>\t %f\n",i,  (*ex)[i].x, (*ex)[i].y);
+		}
+	}
 
 	/* geting center coordinates for the poygon */
 	point origen =  getOrigen(xmax, ymax, xmin, ymin);
@@ -221,8 +240,8 @@ void collectPoints(point **a, int *size,  unsigned rank)
 {
 	FILE *infile;
 
-	infile = fopen("../test_cases/64_int_radius_100.txt", "r");
-//	infile = fopen("../test_cases/10_int_radius_10.txt", "r");
+//	infile = fopen("../test_cases/64_int_radius_100.txt", "r");
+	infile = fopen("../test_cases/10_int_radius_10.txt", "r");
 	if(infile == NULL)
 		printf ( "Cannot read file !!!");
 	int numpoints;
