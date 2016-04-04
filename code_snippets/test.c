@@ -14,6 +14,8 @@ bool isInside(point a, point b, point c, point d);
 void collectPoints(point **a, int *, unsigned rank);
 void aki(point **a, int *size_a, point **ex, int *size_ex,unsigned rank, unsigned count, MPI_Comm comm);
 point getOrigen(point x1, point y1, point x2, point y2);
+bool isNotMPoint(point a, point **ex, int *size_ex);
+void aki_outside(point **a, int *size_a, point **ex, int *size_ex);
 /******************************************************************************/
 int main(int argc, char** argv)
 { 
@@ -61,10 +63,10 @@ int main(int argc, char** argv)
 		{
 			printf ("%f \t<=>\t %f\n",  p[i].x, p[i].y);
 		}
-		// for (i=0; i< size_mx; i++)
-		// {
-		// 	printf ("\t\t\t Here is max points %d: %f \t<=>\t %f\n",i,  mx[i].x, mx[i].y);
-		// }
+		for (i=0; i< size_mx; i++)
+		{
+			printf ("\t\t\t Here is max points %d: %f \t<=>\t %f\n",i,  mx[i].x, mx[i].y);
+		}
 
 	}
 
@@ -93,126 +95,104 @@ void aki(point **a, int *size_a, point **ex, int *size_ex,unsigned rank, unsigne
     MPI_Type_commit(&point_type); //Derived type must be committed to be used
 	/*  ---------------------------  */
 	/* I think it will be beter to make array here, but for now it eill work */
-	point xmax 		= (*a)[0],
-		  ymax 		= (*a)[0],
-		  xmin 		= (*a)[0],
-		  ymin 		= (*a)[0],
-		  summax 	= (*a)[0],
-		  summin 	= (*a)[0],
-		  difmax 	= (*a)[0],
-		  difmin 	= (*a)[0];
-
-	/* finding 8 point for aki  */
-	if (rank == 0 )
-	{
-		for (i=0; i<*size_a; i++)
-		{
-			if ((*a)[i].x > xmax.x ) xmax = (*a)[i];
-			if ((*a)[i].x < xmin.x ) xmin = (*a)[i];
-			if ((*a)[i].y > ymax.y ) ymax = (*a)[i];
-			if ((*a)[i].y < ymin.y ) ymin = (*a)[i];
-			if ( ((*a)[i].x + (*a)[i].y) > (summax.x + summax.y) )  summax = (*a)[i];
-			if ( ((*a)[i].x + (*a)[i].y) < (summin.x + summin.y) )  summin = (*a)[i];
-			if ( ((*a)[i].x - (*a)[i].y) > (difmax.x - difmax.y) )  difmax = (*a)[i];
-			if ( ((*a)[i].x - (*a)[i].y) < (difmin.x - difmin.y) )  difmin = (*a)[i];
-		}
-	}
 
 	/* make sure there is nothing in the array */
 	if (*ex == NULL)
 		free (*ex);
+
 	/* Allocating space for array */
 	*ex = malloc(*size_ex * sizeof(point));
-	/* Assine points to the array, will be esier if points will be in array aswel */
-	if (rank == 0)
+
+	for (i=0; i<*size_ex; i++)
+		(*ex)[i] = (*a)[0];
+
+	/* finding 8 point for aki  */
+	for (i=0; i<*size_a; i++)
 	{
-		(*ex)[0] = xmax;
-		(*ex)[1] = ymax;
-		(*ex)[2] = xmin;
-		(*ex)[3] = ymin;
-		(*ex)[4] = summax;
-		(*ex)[5] = summin;
-		(*ex)[6] = difmax;
-		(*ex)[7] = difmin;
+		if ( (*a)[i].x < (*ex)[0].x ) 								(*ex)[0] = (*a)[i];
+		if (((*a)[i].x - (*a)[i].y) < ((*ex)[1].x - (*ex)[1].y) )   (*ex)[1] = (*a)[i];
+		if ( (*a)[i].y > (*ex)[2].y ) 								(*ex)[2] = (*a)[i];
+		if (((*a)[i].x + (*a)[i].y) > ((*ex)[3].x + (*ex)[3].y) )   (*ex)[3] = (*a)[i];
+		if ( (*a)[i].x > (*ex)[4].x ) 								(*ex)[4] = (*a)[i];
+		if (((*a)[i].x - (*a)[i].y) > ((*ex)[5].x - (*ex)[5].y) )   (*ex)[5] = (*a)[i];
+		if ( (*a)[i].y < (*ex)[6].y ) 								(*ex)[6] = (*a)[i];
+		if (((*a)[i].x + (*a)[i].y) < ((*ex)[7].x + (*ex)[7].y) )   (*ex)[7] = (*a)[i];
 	}
 
 	/* Brotcast the aki points to all cpus */
-    MPI_Bcast((*ex), *size_ex, point_type, 0, comm);
+    // MPI_Bcast((*ex), *size_ex, point_type, 0, comm);
 
-	if (*size_a%count == 0)
-		printf("We are coole !!!");
-	else 
-		printf("The number of proccessers not diviseble by number of points!");
-	if (rank == 1)
-	{
-		int i=0;
-		for (i=0; i< *size_ex; i++)
-		{
-			printf ("\t\t\t Here is max points %d: %f \t<=>\t %f\n",i,  (*ex)[i].x, (*ex)[i].y);
-		}
-	}
-
+	/* Here need to Scater points and run rest of the code on separet cpus */
+	aki_outside(a, size_a, ex, size_ex);
+	
+}
+/******************************************************************************/
+void aki_outside(point **a, int *size_a, point **ex, int *size_ex)
+{
+	int i=0, 
+		new_size_a = 0;
 	/* geting center coordinates for the poygon */
-	point origen =  getOrigen(xmax, ymax, xmin, ymin);
+	point origen =  getOrigen((*ex)[4], (*ex)[2], (*ex)[0], (*ex)[6]);
+	/* Here need to Scater points and run rest of the code on separet cpus */
 	// printf ("Origen x = %f, \t Y= %f\n", origen.x, origen.y);
 
+	
+	// aki_outside(point **a, int *size_a, point **ex, int *size_ex);
+	/* Here need to Scater points and run rest of the code on separet cpus */
 	for (i=0; i<*size_a; i++)
 	{
 		/* Very messy way to make sure I do not checking points to itself */
-		if ( 	!( ((*a)[i].x == xmax.x) && ((*a)[i].y == xmax.y) )
-			&& 	!( ((*a)[i].x == ymax.x) && ((*a)[i].y == ymax.y) )
-			&& 	!( ((*a)[i].x == xmin.x) && ((*a)[i].y == xmin.y) )
-			&& 	!( ((*a)[i].x == ymin.x) && ((*a)[i].y == ymin.y) ) 
-			&& 	!( ((*a)[i].x == summax.x) && ((*a)[i].y == summax.y) ) 
-			&& 	!( ((*a)[i].x == summin.x) && ((*a)[i].y == summin.y) ) 
-			&& 	!( ((*a)[i].x == difmax.x) && ((*a)[i].y == difmax.y) ) 
-			&& 	!( ((*a)[i].x == difmin.x) && ((*a)[i].y == difmin.y) ) 
-			)
+		if ( isNotMPoint( (*a)[i], ex, size_ex) )
 		{
-		/* Very messy way to find if point is inside */
-			if ( 	(isInside(xmin, 	difmin, (*a)[i], origen))
-				&&	(isInside(difmin, 	ymax, 	(*a)[i], origen))
-				&&	(isInside(ymax, 	summax, (*a)[i], origen)) 
-				&&	(isInside(summax, 	xmax, 	(*a)[i], origen)) 
-				&&	(isInside(xmax, 	difmax, (*a)[i], origen)) 
-				&&	(isInside(difmax, 	ymin, 	(*a)[i], origen)) 
-				&&	(isInside(ymin, 	summin, (*a)[i], origen)) 
-				&&	(isInside(summin, 	xmin, 	(*a)[i], origen)) 
-				)
+			int c=0;
+			bool check = true;
+			for (c=0; c<*size_ex; c++)
 			{
-				/*  assined point to origen becouse i didnt figure out way to set it = to NULL  */
-				(*a)[i] = origen;
+				if 	(isInside((*ex)[c], (*ex)[c+1], (*a)[i], origen))
+					check = true;
+				else 
+				{
+					check = false;
+					break;
+				}
 			}
-			else
-				/* Counting points that I ceep */
-				new_size_a++;
+			if (check) (*a)[i] = origen;
+			else new_size_a++;
 		}
 	}
-
-	
 	/* making room for my points  */
-	temp = malloc(new_size_a * sizeof(point) );
+	point *temp = malloc(new_size_a * sizeof(point) );
 	int c=0;
 	for (i=0; i<*size_a; i++)
 	{
 	    if (!( ((*a)[i].x == origen.x) && ((*a)[i].y == origen.y) ))
 	    {
-	   	if ( 	!( ((*a)[i].x == xmax.x) && ((*a)[i].y == xmax.y) )
-	   		&& 	!( ((*a)[i].x == ymax.x) && ((*a)[i].y == ymax.y) )
-	   		&& 	!( ((*a)[i].x == xmin.x) && ((*a)[i].y == xmin.y) )
-	   		&& 	!( ((*a)[i].x == ymin.x) && ((*a)[i].y == ymin.y) ) )
-	   	{
-	       	temp[c] = (*a)[i];
-	   		c++;
-	   		if (c == new_size_a) break;
+			if ( isNotMPoint( (*a)[i], ex, size_ex) )
+	   		{
+	    	   	temp[c] = (*a)[i];
+	   			c++;
+	   			if (c == new_size_a) break;
 
 	    	}
 		}
 	}
+	/* Here need to gether all points back and point to right pointer */
 	/* free spase used by olde points  */
 	free (*a);
 	*a= temp;
 	*size_a=new_size_a;
+}
+/******************************************************************************/
+bool isNotMPoint(point a, point **ex, int *size_ex)
+{
+		return 	!( (a.x == (*ex)[0].x) && (a.y == (*ex)[0].y) )
+			&& 	!( (a.x == (*ex)[1].x) && (a.y == (*ex)[1].y) )
+			&& 	!( (a.x == (*ex)[2].x) && (a.y == (*ex)[2].y) )
+			&& 	!( (a.x == (*ex)[3].x) && (a.y == (*ex)[3].y) ) 
+			&& 	!( (a.x == (*ex)[4].x) && (a.y == (*ex)[4].y) ) 
+			&& 	!( (a.x == (*ex)[5].x) && (a.y == (*ex)[5].y) ) 
+			&& 	!( (a.x == (*ex)[6].x) && (a.y == (*ex)[6].y) ) 
+			&& 	!( (a.x == (*ex)[7].x) && (a.y == (*ex)[7].y) ) ;
 }
 /******************************************************************************/
 point getOrigen(point p1, point p2, point p3, point p4)
